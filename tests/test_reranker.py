@@ -320,3 +320,45 @@ class TestSharedReranker:
 
         assert len(started) == 1
         assert len({id(r) for r in got}) == 1
+
+
+class TestModelLoadsAreSerialized:
+    """An embedder load overlapping a reranker load poisons transformers'
+    meta-device patch for the whole process, so they must take turns."""
+
+    def test_embedder_and_reranker_never_load_at_once(self):
+        import threading
+        import time
+
+        from embeddings.embedder import Embedder
+
+        active = []
+        overlaps = []
+        guard = threading.Lock()
+
+        def slow_load(*args, **kwargs):
+            with guard:
+                active.append(1)
+                if len(active) > 1:
+                    overlaps.append(1)
+            time.sleep(0.05)
+            with guard:
+                active.pop()
+            model = MagicMock()
+            model.get_embedding_dimension.return_value = 4
+            return model
+
+        with (
+            patch("embeddings.embedder.SentenceTransformer", side_effect=slow_load),
+            patch("retrieval.reranker.CrossEncoder", side_effect=slow_load),
+        ):
+            threads = [
+                threading.Thread(target=target)
+                for target in (Embedder, CrossEncoderReranker) * 3
+            ]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        assert overlaps == []

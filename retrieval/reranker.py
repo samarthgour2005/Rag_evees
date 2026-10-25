@@ -23,7 +23,6 @@ cross-encoder stays selectable because the swap is only justified by measuring
 both on the same data — see ``scripts/compare_rerankers.py``.
 """
 
-import threading
 import time
 from abc import ABC, abstractmethod
 from dataclasses import replace
@@ -32,6 +31,7 @@ from typing import TYPE_CHECKING, Dict, List, Literal, Sequence
 from sentence_transformers import CrossEncoder
 
 from config.logging_config import get_logger
+from config.model_loading import MODEL_LOAD_LOCK
 from config.settings import COLBERT_MODEL, CROSS_ENCODER_MODEL, RERANKER_BACKEND
 from retrieval.ranking import RetrievalResult, StageScore
 
@@ -90,7 +90,8 @@ class CrossEncoderReranker(BaseReranker):
     backend = "cross-encoder"
 
     def __init__(self, model_name: str = CROSS_ENCODER_MODEL) -> None:
-        self._model = CrossEncoder(model_name)
+        with MODEL_LOAD_LOCK:
+            self._model = CrossEncoder(model_name)
         self._model_name = model_name
         logger.info("CrossEncoderReranker ready (model=%s)", model_name)
 
@@ -151,7 +152,10 @@ class ColBERTReranker(BaseReranker):
 
             # n_gpu=0: the deployment is CPU-only, and RAGatouille otherwise
             # probes for CUDA on every load.
-            model = RAGPretrainedModel.from_pretrained(model_name, n_gpu=0, verbose=0)
+            with MODEL_LOAD_LOCK:
+                model = RAGPretrainedModel.from_pretrained(
+                    model_name, n_gpu=0, verbose=0
+                )
         self._model = model
         self._model_name = model_name
         # Insertion-ordered, so eviction drops the oldest passage first.
@@ -232,12 +236,12 @@ class ColBERTReranker(BaseReranker):
         return reranked
 
 
-# Model construction goes through one lock. transformers builds a model on
-# the meta device and then loads weights into it, and that machinery is not
-# safe to run from two threads at once: on the live deployment a benchmark
-# sweep and a query each loaded ColBERT concurrently, in FastAPI's threadpool,
-# and the loser failed in ``model.to()`` with "Cannot copy out of meta tensor".
-_LOAD_LOCK = threading.RLock()
+# Model construction goes through the process-wide model-load lock, shared with
+# the embedder (see config.model_loading). On the live deployment a benchmark
+# sweep and a query each loaded a model concurrently, in FastAPI's threadpool,
+# and from then on every load failed in ``model.to()`` with "Cannot copy out of
+# meta tensor" — the cross-encoder fallback included.
+_LOAD_LOCK = MODEL_LOAD_LOCK
 _shared: Dict[str, BaseReranker] = {}
 
 
