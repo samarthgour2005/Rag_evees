@@ -5,6 +5,7 @@ import numpy as np
 from sentence_transformers import SentenceTransformer
 
 from config.logging_config import get_logger
+from config.model_loading import MODEL_LOAD_LOCK
 from config.settings import BATCH_SIZE, DEVICE, EMBEDDING_MODEL
 
 logger = get_logger(__name__)
@@ -25,7 +26,8 @@ class Embedder:
     ) -> None:
         self.model_name = model_name
         self.device = device
-        self._model = SentenceTransformer(model_name, device=device)
+        with MODEL_LOAD_LOCK:
+            self._model = SentenceTransformer(model_name, device=device)
         self.dimension: int = self._model.get_embedding_dimension()
         logger.info(
             "Loaded embedding model: %s (dim=%d, device=%s)",
