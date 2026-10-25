@@ -1,0 +1,280 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------------
+   Design tokens.
+
+   One source of truth for colour, radius and type. Components reference these
+   names and never a literal, so a page cannot drift from the rest of the
+   product by hard-coding a grey.
+
+   The palette is light-first, with a dark set designed alongside it rather
+   than derived by inverting. Inverting produces muddy mid-greys and an accent
+   that no longer has enough contrast against its ground.
+
+   Colour carries meaning here rather than decoration:
+     emerald  the primary action, and "healthy / ready / indexed"
+     blue     interactive — links, selection, the current thing
+     amber    warning, degraded, partial
+     red      failure
+     neutral  everything else, which is most of it
+--------------------------------------------------------------------------- */
+
+@theme inline {
+  /* `--font-geist-sans` is set on <html> by next/font. Mapping it here is what
+     actually applies it: this line previously read `var(--font-sans)`, a
+     self-reference that never resolved, so every page in the application
+     silently rendered in the browser's default serif. */
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-geist-sans);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-subtle: var(--destructive-subtle);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-subtle: var(--success-subtle);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-subtle: var(--warning-subtle);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-subtle: var(--info-subtle);
+
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-subtle-foreground: var(--subtle-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  /* 8px base. Large radii read as consumer software; square reads as unfinished.
+     Everything in the product sits between 4 and 10. */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 14px;
+  --radius-4xl: 16px;
+}
+
+/* --------------------------------------------------------------------------
+   Light — the default appearance.
+
+   An airy ground (#f8fafc) with white cards on it, so a panel reads as a panel
+   without a heavy border; text is a soft slate rather than near-black, which
+   is easier on a page that is mostly numbers. Foreground, muted and subtle
+   text all clear WCAG AA (4.5:1) against both the ground and a card.
+-------------------------------------------------------------------------- */
+:root {
+  --background: #f8fafc;
+  --foreground: #1e293b;
+  --surface: #f1f5f9;
+  --elevated: #ffffff;
+
+  --card: #ffffff;
+  --card-foreground: #1e293b;
+  --popover: #ffffff;
+  --popover-foreground: #1e293b;
+
+  /* Primary is the emerald action, not a neutral: a developer tool has few
+     primary buttons and they should be findable. */
+  --primary: #047857;
+  --primary-foreground: #ffffff;
+  --secondary: #eef2f6;
+  --secondary-foreground: #1e293b;
+
+  --muted: #eef2f6;
+  --muted-foreground: #526070;
+  --subtle-foreground: #626e7e;
+
+  --accent: #ecf7f3;
+  --accent-foreground: #0f3d2e;
+
+  --success: #15803d;
+  --success-foreground: #ffffff;
+  --success-subtle: #ecf8f0;
+  --warning: #b45309;
+  --warning-foreground: #ffffff;
+  --warning-subtle: #fef6e7;
+  --destructive: #b42318;
+  --destructive-foreground: #ffffff;
+  --destructive-subtle: #fef0ef;
+  --info: #1d4ed8;
+  --info-foreground: #ffffff;
+  --info-subtle: #eef3ff;
+
+  --border: #e6ebf1;
+  --border-strong: #d3dbe5;
+  --input: #d3dbe5;
+  --ring: #047857;
+
+  --radius: 8px;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #1e293b;
+  --sidebar-primary: #047857;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #ecf7f3;
+  --sidebar-accent-foreground: #0f3d2e;
+  --sidebar-border: #e6ebf1;
+  --sidebar-ring: #047857;
+
+  /* Charts. Each series keeps its meaning across every page: precision is
+     always emerald, recall always blue, MRR always indigo, hit rate always
+     amber. A reader who learns the mapping once does not relearn it. */
+  --chart-1: #059669;
+  --chart-2: #2563eb;
+  --chart-3: #6366f1;
+  --chart-4: #d97706;
+  --chart-5: #64748b;
+}
+
+/* --------------------------------------------------------------------------
+   Dark — opt-in from the theme toggle.
+
+   Slate rather than near-black: the ground sits at #111827, so cards and
+   borders separate by lightness instead of by hairlines on a void.
+-------------------------------------------------------------------------- */
+.dark {
+  --background: #111827;
+  --foreground: #f1f5f9;
+  --surface: #151e2d;
+  --elevated: #1f2937;
+
+  --card: #182234;
+  --card-foreground: #f1f5f9;
+  --popover: #1f2937;
+  --popover-foreground: #f1f5f9;
+
+  --primary: #10b981;
+  --primary-foreground: #04140e;
+  --secondary: #1f2a3c;
+  --secondary-foreground: #e5e7eb;
+
+  --muted: #1f2a3c;
+  --muted-foreground: #a3adbb;
+  --subtle-foreground: #808b9c;
+
+  --accent: #22304a;
+  --accent-foreground: #f1f5f9;
+
+  --success: #22c55e;
+  --success-foreground: #04140b;
+  --success-subtle: #133222;
+  --warning: #f59e0b;
+  --warning-foreground: #1a1204;
+  --warning-subtle: #36290c;
+  --destructive: #ef4444;
+  --destructive-foreground: #1a0606;
+  --destructive-subtle: #3a1817;
+  --info: #60a5fa;
+  --info-foreground: #05101f;
+  --info-subtle: #15273f;
+
+  --border: #2a3648;
+  --border-strong: #374559;
+  --input: #374559;
+  /* Brighter than the border so focus is never ambiguous on a dark ground,
+     and not the accent, so focus and "primary" stay distinguishable. */
+  --ring: #5eead4;
+
+  --sidebar: #0f1623;
+  --sidebar-foreground: #f1f5f9;
+  --sidebar-primary: #10b981;
+  --sidebar-primary-foreground: #04140e;
+  --sidebar-accent: #1f2a3c;
+  --sidebar-accent-foreground: #f1f5f9;
+  --sidebar-border: #233042;
+  --sidebar-ring: #5eead4;
+
+  --chart-1: #34d399;
+  --chart-2: #60a5fa;
+  --chart-3: #a5b4fc;
+  --chart-4: #fbbf24;
+  --chart-5: #94a3b8;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings: "cv11", "ss01";
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Digits in a column line up, which is most of the numbers in this product:
+     latency, scores, chunk counts, metrics. */
+  table,
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Focus is visible on every interactive element, and only for keyboard use,
+     so a mouse click does not leave a ring behind. */
+  :focus-visible {
+    @apply outline-ring;
+    outline-width: 2px;
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background: color-mix(in oklab, var(--primary) 28%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
