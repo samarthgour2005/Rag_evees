@@ -1,0 +1,61 @@
+version: "3.9"
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+    image: rag-evaluation-api:latest
+    container_name: rag-api
+    # Bound to localhost: the public route is through Caddy below. Use
+    # `curl localhost:8000/health` on the box to bypass TLS when debugging.
+    ports:
+      - "127.0.0.1:8000:8000"
+    # GROQ_API_KEY, ALLOWED_ORIGINS and the optional knobs — see .env.example.
+    # Read at container start, so a key rotation needs `docker compose up -d`.
+    env_file: .env
+    environment:
+      LOG_LEVEL: "INFO"
+    volumes:
+      # A named volume, not a read-only bind mount. The image already contains
+      # the benchmark index, and Docker seeds an empty named volume from the
+      # image, so the corpus is there on first run — while uploads, the document
+      # database and rebuilt indexes survive a restart instead of being refused
+      # by a read-only filesystem.
+      - index:/app/index
+      # Persist logs outside the container
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+
+  caddy:
+    image: caddy:2
+    container_name: rag-caddy
+    depends_on:
+      - api
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      API_DOMAIN: "${API_DOMAIN}"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # Certificates live here; losing them on every restart would run into
+      # Let's Encrypt's rate limits.
+      - caddy_data:/data
+      - caddy_config:/config
+    restart: unless-stopped
+
+volumes:
+  # Uploads and the document database live here, so `docker compose down`
+  # without `-v` keeps them.
+  index:
+  caddy_data:
+  caddy_config:

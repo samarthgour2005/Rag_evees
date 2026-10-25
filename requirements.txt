@@ -1,0 +1,43 @@
+# Core
+pymupdf>=1.24.0
+langchain-text-splitters>=0.3.0
+sentence-transformers>=3.0.0
+faiss-cpu>=1.8.0
+groq>=0.9.0
+fastapi>=0.111.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.7.0
+# Required by POST /documents: FastAPI raises at import time, not at request
+# time, when a route declares UploadFile without it — so a missing multipart
+# takes the whole app down rather than one endpoint.
+python-multipart>=0.0.9
+
+# Evaluation
+rouge-score>=0.1.2
+nltk>=3.8.1
+
+# AWS
+boto3>=1.34.0
+mangum>=0.17.0
+
+# Retrieval extensions
+rank-bm25>=0.2.2
+# ColBERT reranking (the default reranker). Upper-bounded: 0.0.10 drops the
+# Stanford ColBERT backend this code calls through RAGPretrainedModel.
+ragatouille>=0.0.9,<0.0.10
+# RAGatouille 0.0.9 imports langchain.retrievers at import time, a module
+# langchain 1.0 removed — without this pin `import ragatouille` fails.
+langchain>=0.3,<1
+# colbert-ai subclasses BertPreTrainedModel in a way transformers 5 no longer
+# supports (HF_ColBERT has no `all_tied_weights_keys`); loading the checkpoint
+# raises AttributeError on 5.x.
+transformers<5
+
+# Load testing
+locust>=2.20.0
+
+# Dev / testing
+pytest>=8.2.0
+pytest-cov>=5.0.0
+ruff>=0.6.0
+black>=24.0.0
